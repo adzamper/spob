@@ -23,6 +23,8 @@ spob/
 
 ## Prerequisites
 
+**Windows Users:** For detailed step-by-step instructions with troubleshooting, see **[WINDOWS_SETUP.md](WINDOWS_SETUP.md)**
+
 ### For Building WASM
 
 1. **Emscripten SDK**
@@ -224,6 +226,8 @@ The WASM implementation provides near-native performance in the browser:
 
 ## Troubleshooting
 
+**For detailed Windows troubleshooting, see [WINDOWS_SETUP.md](WINDOWS_SETUP.md)**
+
 ### Build Errors
 
 **Error: `emcc: command not found`**
@@ -232,12 +236,21 @@ The WASM implementation provides near-native performance in the browser:
 **Error: `Cannot find module` in browser**
 - Solution: Ensure you're running from a web server, not opening HTML directly
 
+**Error: `No such file or directory: frontend/pkg`**
+- Solution: The build script now creates this automatically, but you can manually run: `mkdir -p frontend/pkg` (Linux/Mac) or `mkdir frontend\pkg` (Windows)
+
 ### Runtime Issues
 
 **Error: "Failed to load WASM module"**
 - Check that both `.js` and `.wasm` files exist in `frontend/pkg/`
 - Verify web server is running and serving files correctly
 - Check browser console for detailed error messages
+
+**Error: "wasmModule.calculate_em_response is not a function"**
+- This was a bug in the WASM module initialization code (fixed in latest version)
+- Solution: Rebuild the WASM module and refresh your browser
+- Make sure you have the latest `frontend/app.js`
+- Clear your browser cache if the error persists
 
 **Calculation hangs or takes very long**
 - Try reducing the number of profile positions (edit interval in C++ code)

@@ -4,6 +4,9 @@ REM This script should be run from the Emscripten command prompt
 
 echo Building Sphere Overburden WASM module...
 
+REM Ensure output directory exists
+if not exist "frontend\pkg" mkdir "frontend\pkg"
+
 REM Compile with Emscripten
 emcc sphere_overburden.cpp ^
   -o frontend/pkg/sphere_overburden_wasm.js ^

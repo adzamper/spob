@@ -23,7 +23,7 @@ const MU_0 = 1.2566370614359172e-6; // Magnetic permeability of free space (H/m)
 
 /**
  * Load and initialize the WebAssembly module
- * The WASM file should be built from the Rust source using wasm-pack
+ * The WASM file is built from C++ source using Emscripten
  */
 async function initWasm() {
     try {
@@ -31,10 +31,8 @@ async function initWasm() {
         const wasm = await import('./pkg/sphere_overburden_wasm.js');
 
         // Initialize the WASM module (critical step!)
-        await wasm.default();
-
-        // Store the initialized module
-        wasmModule = wasm;
+        // IMPORTANT: Store the RESULT of wasm.default(), not the import itself
+        wasmModule = await wasm.default();
 
         console.log('WASM module loaded and initialized successfully');
         document.getElementById('calculateBtn').disabled = false;
