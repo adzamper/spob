@@ -1,0 +1,18 @@
+{
+  "name": "sphere-overburden-wasm",
+  "type": "module",
+  "collaborators": [
+    "Sphere Overburden Team"
+  ],
+  "version": "0.1.0",
+  "files": [
+    "sphere_overburden_wasm_bg.wasm",
+    "sphere_overburden_wasm.js",
+    "sphere_overburden_wasm.d.ts"
+  ],
+  "main": "sphere_overburden_wasm.js",
+  "types": "sphere_overburden_wasm.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
