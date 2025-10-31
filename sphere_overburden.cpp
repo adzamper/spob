@@ -570,7 +570,7 @@ std::string calculate_em_response(const std::string& params_json) {
         if (!std::isnan(val = extract_num(params_json, "mtx_x"))) params.mtx.x = val;
         if (!std::isnan(val = extract_num(params_json, "mtx_y"))) params.mtx.y = val;
         if (!std::isnan(val = extract_num(params_json, "mtx_z"))) params.mtx.z = val;
-        params.mtx = params.mtx.normalize();
+        params.mtx = params.mtx.normalized();
 
         // Sphere parameters
         if (!std::isnan(val = extract_num(params_json, "a"))) params.a = val;
