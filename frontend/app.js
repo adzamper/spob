@@ -193,10 +193,11 @@ async function calculate() {
 
         // Call WASM calculation function
         // This may take several seconds for the full calculation
-        const responseData = wasmModule.calculate_em_response(paramsJson);
+        // The function returns a JSON string directly (std::string from C++)
+        const responseJson = wasmModule.calculate_em_response(paramsJson);
 
-        // Parse response
-        currentResponse = JSON.parse(responseData.toJSON());
+        // Parse the JSON string to get the response object
+        currentResponse = JSON.parse(responseJson);
 
         // Update visualization
         updatePlots();

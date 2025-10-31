@@ -302,11 +302,35 @@ http://localhost:8000
 
 ### Problem: `wasmModule.calculate_em_response is not a function`
 
-**This is the bug being fixed in this commit.**
+**This bug has been fixed.**
 
-The issue is in `frontend/app.js` where the WASM module initialization doesn't properly capture the initialized module instance.
+The issue was in `frontend/app.js` where the WASM module initialization wasn't properly capturing the initialized module instance.
 
-**Solution:** Update to the latest version of `app.js` which fixes this initialization bug.
+**Solution:** Update to the latest version of `app.js` which fixes this initialization bug. Then rebuild:
+```cmd
+C:\emsdk\emsdk_env.bat
+cd C:\Users\YourUsername\Documents\spob
+build_wasm.bat
+```
+
+---
+
+### Problem: `responseData.toJSON is not a function`
+
+**This bug has been fixed.**
+
+The issue was that the C++ function returns a JSON string directly, but the JavaScript code was trying to call `.toJSON()` on it as if it were an object.
+
+**Solution:** Update to the latest version of `app.js`. The fix changes:
+```javascript
+// OLD (incorrect):
+const response = JSON.parse(responseData.toJSON());
+
+// NEW (correct):
+const response = JSON.parse(responseJson);
+```
+
+After updating, refresh your browser with Ctrl+F5 to clear the cache.
 
 ---
 

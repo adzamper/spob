@@ -252,6 +252,12 @@ The WASM implementation provides near-native performance in the browser:
 - Make sure you have the latest `frontend/app.js`
 - Clear your browser cache if the error persists
 
+**Error: "responseData.toJSON is not a function"**
+- This was a bug where the code expected an object but got a JSON string directly
+- Solution: Update to the latest `frontend/app.js`
+- The C++ function returns a JSON string, not an object with a toJSON() method
+- Clear browser cache with Ctrl+F5 after updating
+
 **Calculation hangs or takes very long**
 - Try reducing the number of profile positions (edit interval in C++ code)
 - Check parameter values are reasonable
