@@ -498,6 +498,28 @@ C:\Users\YourUsername\Documents\
 
 ---
 
+---
+
+## Important Updates
+
+### Latest Fixes (2025-10-31)
+
+**Parameter Parsing Fixed:** The C++ code now properly reads your input parameters from the web interface. Previous versions used hardcoded default values, which is why changing inputs had no effect. After rebuilding with the latest code:
+
+- ✅ All frontend widgets now work correctly
+- ✅ Tab switching works
+- ✅ Component toggles (X, Y, Z) work
+- ✅ Parameter changes affect calculations
+- ✅ Smoother numerical results (improved integration tolerances)
+
+**To get the fixes:**
+1. Pull the latest code: `git pull`
+2. Rebuild WASM: Run `build_wasm.bat` from Emscripten command prompt
+3. Refresh browser with `Ctrl+F5` to clear cache
+4. Try changing parameters - you should see different results!
+
+---
+
 **Last Updated:** 2025-10-31
 
 For the latest version and updates, check the project repository.

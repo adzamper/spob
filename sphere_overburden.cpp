@@ -15,6 +15,7 @@
 #include <sstream>
 #include <algorithm>
 #include <functional>
+#include <limits>
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
@@ -338,7 +339,7 @@ double Thetafunction_step(double t, double O, double o, double mu,
 }
 
 // ============================================================================
-// Adaptive Simpson's Integration
+// Adaptive Simpson's Integration with both absolute and relative tolerance
 // ============================================================================
 double adaptive_simpsons(std::function<double(double)> f, double a, double b,
                           double epsilon, int max_depth) {
@@ -348,19 +349,26 @@ double adaptive_simpsons(std::function<double(double)> f, double a, double b,
         return h * (func(a) + 4.0 * func(c) + func(b));
     };
 
-    std::function<double(double, double, double, int)> recursive;
-    recursive = [&](double a, double b, double eps, int depth) -> double {
+    std::function<double(double, double, double, double, int)> recursive;
+    recursive = [&](double a, double b, double eps, double whole_abs, int depth) -> double {
         double c = (a + b) / 2.0;
         double whole = simpsons(f, a, b);
         double left = simpsons(f, a, c);
         double right = simpsons(f, c, b);
 
-        if (depth >= max_depth || std::abs(left + right - whole) <= 15.0 * eps) {
+        double error = std::abs(left + right - whole);
+
+        // Combined absolute and relative tolerance check
+        // Similar to MATLAB's integral() with both AbsTol and RelTol
+        double tol = 15.0 * eps + 15.0 * epsilon * std::abs(whole_abs);
+
+        if (depth >= max_depth || error <= tol) {
             return left + right + (left + right - whole) / 15.0;
         }
 
-        return recursive(a, c, eps / 2.0, depth + 1) +
-               recursive(c, b, eps / 2.0, depth + 1);
+        double new_whole = left + right;
+        return recursive(a, c, eps / 2.0, new_whole, depth + 1) +
+               recursive(c, b, eps / 2.0, new_whole, depth + 1);
     };
 
     // Handle case where integrand might be zero or very small
@@ -371,7 +379,8 @@ double adaptive_simpsons(std::function<double(double)> f, double a, double b,
         return 0.0;
     }
 
-    return recursive(a, b, epsilon, 0);
+    double whole_est = simpsons(f, a, b);
+    return recursive(a, b, epsilon, std::abs(whole_est), 0);
 }
 
 // ============================================================================
@@ -389,9 +398,10 @@ double dH_tot_x_step(const Vec3& mtx, double dipoleM, const Vec3& rtx,
     };
 
     // Compute integral from 0 to t-o with adaptive quadrature
+    // Using tighter tolerance for smooth results (matching MATLAB RelTol=1e-5, AbsTol=1e-20)
     double integral_result = 0.0;
     if (t - o > 1e-10) {
-        integral_result = adaptive_simpsons(fun, 0.0, t - o, 1e-5, 20);
+        integral_result = adaptive_simpsons(fun, 0.0, t - o, 1e-6, 25);
     }
 
     // Add the boundary term
@@ -412,9 +422,10 @@ double dH_tot_z_step(const Vec3& mtx, double dipoleM, const Vec3& rtx,
     };
 
     // Compute integral from 0 to t-o with adaptive quadrature
+    // Using tighter tolerance for smooth results (matching MATLAB RelTol=1e-5, AbsTol=1e-20)
     double integral_result = 0.0;
     if (t - o > 1e-10) {
-        integral_result = adaptive_simpsons(fun, 0.0, t - o, 1e-5, 20);
+        integral_result = adaptive_simpsons(fun, 0.0, t - o, 1e-6, 25);
     }
 
     // Add the boundary term
@@ -497,15 +508,9 @@ void H_total_step_1storder(const Vec3& mtx, double dipoleM, const Vec3& rtx,
 // Main Calculation Function
 // ============================================================================
 std::string calculate_em_response(const std::string& params_json) {
-    // In a real implementation, you would parse the JSON here
-    // For now, we'll use hardcoded defaults and update based on simple parsing
-
     Parameters params;
 
-    // Parse JSON (simplified - in production use a proper JSON library)
-    // For WASM build, we'll use Emscripten's val to handle JSON
-    // Here we set defaults from the MATLAB code
-
+    // Set defaults first
     params.radar = 120.0;
     params.mu = MU_0;
     params.dipole_m = 1.847300e6;
@@ -513,23 +518,79 @@ std::string calculate_em_response(const std::string& params_json) {
     params.period = 1.0 / params.base_freq;
     params.pulse_length = 3.65e-3;
     params.profile_length = 800.0;
-
     params.rtxrx = Vec3(125.0, 0.0, 56.0);
     params.mtx = Vec3(0.0, 0.0, 1.0);
-
     params.a = 100.0;
     params.sigma_sp = 0.5;
     params.rsp = Vec3(0.0, 0.0, -200.0);
-
     params.sigma_ob = 1.0 / 30.0;
     params.thick_ob = 4.0;
-
     params.apply_dip = false;
     params.strike = 90.0;
     params.dip = 85.0;
-
     params.xsign_negative = false;
     params.interval = 101;
+
+    // Parse JSON - simple manual parsing (no external library needed)
+    if (!params_json.empty() && params_json != "{}") {
+        auto extract_num = [](const std::string& json, const std::string& key) -> double {
+            size_t pos = json.find("\"" + key + "\"");
+            if (pos == std::string::npos) return std::numeric_limits<double>::quiet_NaN();
+            pos = json.find(":", pos);
+            if (pos == std::string::npos) return std::numeric_limits<double>::quiet_NaN();
+            size_t end = json.find_first_of(",}", pos);
+            std::string val_str = json.substr(pos + 1, end - pos - 1);
+            try { return std::stod(val_str); } catch (...) { return std::numeric_limits<double>::quiet_NaN(); }
+        };
+
+        auto extract_bool = [](const std::string& json, const std::string& key) -> bool {
+            size_t pos = json.find("\"" + key + "\"");
+            if (pos == std::string::npos) return false;
+            pos = json.find(":", pos);
+            return json.find("true", pos) < json.find(",", pos) ||
+                   json.find("true", pos) < json.find("}", pos);
+        };
+
+        double val;
+
+        // Survey parameters
+        if (!std::isnan(val = extract_num(params_json, "radar"))) params.radar = val;
+        if (!std::isnan(val = extract_num(params_json, "dipole_m"))) params.dipole_m = val;
+        if (!std::isnan(val = extract_num(params_json, "base_freq"))) params.base_freq = val;
+        if (!std::isnan(val = extract_num(params_json, "pulse_length"))) params.pulse_length = val;
+        if (!std::isnan(val = extract_num(params_json, "period"))) params.period = val;
+        if (!std::isnan(val = extract_num(params_json, "profile_length"))) params.profile_length = val;
+
+        // Tx-Rx offset vector
+        if (!std::isnan(val = extract_num(params_json, "rtxrx_x"))) params.rtxrx.x = val;
+        if (!std::isnan(val = extract_num(params_json, "rtxrx_y"))) params.rtxrx.y = val;
+        if (!std::isnan(val = extract_num(params_json, "rtxrx_z"))) params.rtxrx.z = val;
+
+        // Dipole direction vector
+        if (!std::isnan(val = extract_num(params_json, "mtx_x"))) params.mtx.x = val;
+        if (!std::isnan(val = extract_num(params_json, "mtx_y"))) params.mtx.y = val;
+        if (!std::isnan(val = extract_num(params_json, "mtx_z"))) params.mtx.z = val;
+        params.mtx = params.mtx.normalize();
+
+        // Sphere parameters
+        if (!std::isnan(val = extract_num(params_json, "a"))) params.a = val;
+        if (!std::isnan(val = extract_num(params_json, "sigma_sp"))) params.sigma_sp = val;
+        if (!std::isnan(val = extract_num(params_json, "rsp_x"))) params.rsp.x = val;
+        if (!std::isnan(val = extract_num(params_json, "rsp_y"))) params.rsp.y = val;
+        if (!std::isnan(val = extract_num(params_json, "rsp_z"))) params.rsp.z = val;
+
+        // Overburden parameters
+        if (!std::isnan(val = extract_num(params_json, "sigma_ob"))) params.sigma_ob = val;
+        if (!std::isnan(val = extract_num(params_json, "thick_ob"))) params.thick_ob = val;
+
+        // Geology parameters
+        params.apply_dip = extract_bool(params_json, "apply_dip");
+        if (!std::isnan(val = extract_num(params_json, "strike"))) params.strike = val;
+        if (!std::isnan(val = extract_num(params_json, "dip"))) params.dip = val;
+
+        // Advanced parameters
+        params.xsign_negative = extract_bool(params_json, "xsign_negative");
+    }
 
     // Allocate result arrays
     int nw = TIME_WINDOWS.size();

@@ -224,6 +224,29 @@ The WASM implementation provides near-native performance in the browser:
 - Memory usage: < 100 MB
 - Parallel execution: Automatically utilizes available CPU cores (browser dependent)
 
+## Recent Updates (2025-10-31)
+
+### Parameter Parsing and Numerical Stability Fixed
+
+Previous versions had two critical issues:
+1. **Parameters not being read**: The C++ code used hardcoded defaults instead of parsing JSON input from the frontend
+2. **Numerical instability**: Integration tolerances were too loose, causing spiky results
+
+**These are now fixed!** After rebuilding:
+- ✅ All frontend controls now properly affect calculations
+- ✅ Changing sphere position, conductivity, etc. produces different results
+- ✅ Results are smooth (improved integration accuracy)
+- ✅ Tab navigation and component toggles work correctly
+
+**To get the fixes:**
+```bash
+git pull
+./build_wasm.sh   # or build_wasm.bat on Windows
+# Refresh browser with Ctrl+F5
+```
+
+---
+
 ## Troubleshooting
 
 **For detailed Windows troubleshooting, see [WINDOWS_SETUP.md](WINDOWS_SETUP.md)**
