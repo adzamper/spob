@@ -322,7 +322,8 @@ double Thetafunction_step(double t, double O, double o, double mu,
     double temp = INFINITY;
     int k = 0;
 
-    // Sum until convergence (ratio < 1e-6)
+    // Sum until convergence: theta/temp >= 1e6 (term < 1 ppm of sum)
+    // Matches MATLAB: while (theta/temp) < 1E6
     while (std::abs(theta / temp) < 1e6 && k < 10000) {
         k++;
         double k_pi_sq = (k * PI) * (k * PI);
@@ -330,27 +331,25 @@ double Thetafunction_step(double t, double O, double o, double mu,
         double amp_reduction = 1.0 / (1.0 + std::exp(-Ton2 * k_pi_sq / ss));
         temp = amp_reduction * (6.0 / k_pi_sq) * exp_term;
         theta += temp;
-
-        // Early termination if term becomes negligible
-        if (std::abs(temp) < 1e-20) break;
     }
 
     return theta;
 }
 
 // ============================================================================
-// Adaptive Simpson's Integration with both absolute and relative tolerance
+// Adaptive Simpson's Integration with separate absolute and relative tolerance
+// Matches MATLAB's integral() function behavior
 // ============================================================================
 double adaptive_simpsons(std::function<double(double)> f, double a, double b,
-                          double epsilon, int max_depth) {
+                          double rel_tol, int max_depth, double abs_tol = 1e-20) {
     auto simpsons = [](std::function<double(double)> func, double a, double b) -> double {
         double c = (a + b) / 2.0;
         double h = (b - a) / 6.0;
         return h * (func(a) + 4.0 * func(c) + func(b));
     };
 
-    std::function<double(double, double, double, double, int)> recursive;
-    recursive = [&](double a, double b, double eps, double whole_abs, int depth) -> double {
+    std::function<double(double, double, double, int)> recursive;
+    recursive = [&](double a, double b, double whole_parent, int depth) -> double {
         double c = (a + b) / 2.0;
         double whole = simpsons(f, a, b);
         double left = simpsons(f, a, c);
@@ -358,29 +357,29 @@ double adaptive_simpsons(std::function<double(double)> f, double a, double b,
 
         double error = std::abs(left + right - whole);
 
-        // Combined absolute and relative tolerance check
-        // Similar to MATLAB's integral() with both AbsTol and RelTol
-        double tol = 15.0 * eps + 15.0 * epsilon * std::abs(whole_abs);
+        // Combined absolute and relative tolerance (MATLAB-style)
+        // tol = 15 * (AbsTol + RelTol * |integral_estimate|)
+        double tol = 15.0 * (abs_tol + rel_tol * std::abs(whole_parent));
 
         if (depth >= max_depth || error <= tol) {
             return left + right + (left + right - whole) / 15.0;
         }
 
         double new_whole = left + right;
-        return recursive(a, c, eps / 2.0, new_whole, depth + 1) +
-               recursive(c, b, eps / 2.0, new_whole, depth + 1);
+        return recursive(a, c, new_whole, depth + 1) +
+               recursive(c, b, new_whole, depth + 1);
     };
 
-    // Handle case where integrand might be zero or very small
+    // Handle case where integrand might be zero or very small everywhere
     double fa = f(a);
     double fb = f(b);
     double fc = f((a + b) / 2.0);
-    if (std::abs(fa) < 1e-20 && std::abs(fb) < 1e-20 && std::abs(fc) < 1e-20) {
+    if (std::abs(fa) < abs_tol && std::abs(fb) < abs_tol && std::abs(fc) < abs_tol) {
         return 0.0;
     }
 
     double whole_est = simpsons(f, a, b);
-    return recursive(a, b, epsilon, std::abs(whole_est), 0);
+    return recursive(a, b, whole_est, 0);
 }
 
 // ============================================================================
@@ -398,10 +397,10 @@ double dH_tot_x_step(const Vec3& mtx, double dipoleM, const Vec3& rtx,
     };
 
     // Compute integral from 0 to t-o with adaptive quadrature
-    // Using tighter tolerance for smooth results (matching MATLAB RelTol=1e-5, AbsTol=1e-20)
+    // MATLAB: integral(fun, 0, t-o, 'RelTol', 1e-5, 'AbsTol', 1e-20)
     double integral_result = 0.0;
     if (t - o > 1e-10) {
-        integral_result = adaptive_simpsons(fun, 0.0, t - o, 1e-6, 25);
+        integral_result = adaptive_simpsons(fun, 0.0, t - o, 1e-5, 30, 1e-20);
     }
 
     // Add the boundary term
@@ -422,10 +421,10 @@ double dH_tot_z_step(const Vec3& mtx, double dipoleM, const Vec3& rtx,
     };
 
     // Compute integral from 0 to t-o with adaptive quadrature
-    // Using tighter tolerance for smooth results (matching MATLAB RelTol=1e-5, AbsTol=1e-20)
+    // MATLAB: integral(fun, 0, t-o, 'RelTol', 1e-5, 'AbsTol', 1e-20)
     double integral_result = 0.0;
     if (t - o > 1e-10) {
-        integral_result = adaptive_simpsons(fun, 0.0, t - o, 1e-6, 25);
+        integral_result = adaptive_simpsons(fun, 0.0, t - o, 1e-5, 30, 1e-20);
     }
 
     // Add the boundary term
