@@ -1,0 +1,19 @@
+# Compiled test executables
+test_sphere
+test_angles
+
+# Build artifacts
+*.o
+*.wasm
+*.js.mem
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
