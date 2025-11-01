@@ -469,7 +469,12 @@ void H_total_step_1storder(const Vec3& mtx, double dipoleM, const Vec3& rtx,
     // Store sphere moment
     Vec3 msp(convo_x, convo_y, convo_z);
 
-    #ifndef __EMSCRIPTEN__
+    #ifdef __EMSCRIPTEN__
+    EM_ASM_({
+        console.log('DEBUG: applydip = ' + $0 + ', dip = ' + $1 + ', strike = ' + $2);
+        console.log('DEBUG: msp before dipping: (' + $3 + ', ' + $4 + ', ' + $5 + ')');
+    }, applydip, dip, strike, msp.x, msp.y, msp.z);
+    #else
     std::cout << "DEBUG: applydip = " << applydip << ", dip = " << dip << ", strike = " << strike << std::endl;
     std::cout << "DEBUG: msp before dipping: (" << msp.x << ", " << msp.y << ", " << msp.z << ")" << std::endl;
     #endif
@@ -480,7 +485,14 @@ void H_total_step_1storder(const Vec3& mtx, double dipoleM, const Vec3& rtx,
         double strike_rad = (strike - 90.0) * PI / 180.0;
         double dip_rad = (90.0 - dip) * PI / 180.0;
 
-        #ifndef __EMSCRIPTEN__
+        #ifdef __EMSCRIPTEN__
+        EM_ASM_({
+            console.log('DEBUG: Applying dip');
+            console.log('  dip = ' + $0 + ', strike = ' + $1);
+            console.log('  dip_rad = ' + $2 + ', strike_rad = ' + $3);
+            console.log('  msp before projection: (' + $4 + ', ' + $5 + ', ' + $6 + ')');
+        }, dip, strike, dip_rad, strike_rad, msp.x, msp.y, msp.z);
+        #else
         std::cout << "DEBUG: Applying dip" << std::endl;
         std::cout << "  dip = " << dip << ", strike = " << strike << std::endl;
         std::cout << "  dip_rad = " << dip_rad << ", strike_rad = " << strike_rad << std::endl;
@@ -491,27 +503,43 @@ void H_total_step_1storder(const Vec3& mtx, double dipoleM, const Vec3& rtx,
                   std::sin(strike_rad) * std::cos(dip_rad),
                   std::sin(dip_rad));
 
-        #ifndef __EMSCRIPTEN__
+        #ifdef __EMSCRIPTEN__
+        EM_ASM_({
+            console.log('  norm before normalization: (' + $0 + ', ' + $1 + ', ' + $2 + ')');
+        }, norm.x, norm.y, norm.z);
+        #else
         std::cout << "  norm before normalization: (" << norm.x << ", " << norm.y << ", " << norm.z << ")" << std::endl;
         #endif
 
         // Normalize
         norm = norm.normalized();
 
-        #ifndef __EMSCRIPTEN__
+        #ifdef __EMSCRIPTEN__
+        EM_ASM_({
+            console.log('  norm after normalization: (' + $0 + ', ' + $1 + ', ' + $2 + ')');
+        }, norm.x, norm.y, norm.z);
+        #else
         std::cout << "  norm after normalization: (" << norm.x << ", " << norm.y << ", " << norm.z << ")" << std::endl;
         #endif
 
         // Project moment onto normal direction
         double mspdotnorm = msp.dot(norm);
 
-        #ifndef __EMSCRIPTEN__
+        #ifdef __EMSCRIPTEN__
+        EM_ASM_({
+            console.log('  msp.dot(norm) = ' + $0);
+        }, mspdotnorm);
+        #else
         std::cout << "  msp.dot(norm) = " << mspdotnorm << std::endl;
         #endif
 
         msp = norm * mspdotnorm;
 
-        #ifndef __EMSCRIPTEN__
+        #ifdef __EMSCRIPTEN__
+        EM_ASM_({
+            console.log('  msp after projection: (' + $0 + ', ' + $1 + ', ' + $2 + ')');
+        }, msp.x, msp.y, msp.z);
+        #else
         std::cout << "  msp after projection: (" << msp.x << ", " << msp.y << ", " << msp.z << ")" << std::endl;
         #endif
     }
@@ -523,10 +551,33 @@ void H_total_step_1storder(const Vec3& mtx, double dipoleM, const Vec3& rtx,
 
     Vec3 H_sphere = static_dipole_field(msp, r_rel);
 
-    // Sign convention matches MATLAB: H_tot_x is negative, H_tot_z is positive
-    // This applies consistently regardless of applydip setting
-    H_tot_x = -H_sphere.x;
-    H_tot_z = H_sphere.z;
+    #ifdef __EMSCRIPTEN__
+    EM_ASM_({
+        console.log('  H_sphere from static_dipole_field: (' + $0 + ', ' + $1 + ', ' + $2 + ')');
+    }, H_sphere.x, H_sphere.y, H_sphere.z);
+    #else
+    std::cout << "  H_sphere from static_dipole_field: (" << H_sphere.x << ", " << H_sphere.y << ", " << H_sphere.z << ")" << std::endl;
+    #endif
+
+    // Sign convention depends on whether dip is applied
+    if (applydip) {
+        // When dipping is applied, the rotation changes the coordinate system
+        // We need to flip both x and z signs relative to the non-dipped case
+        H_tot_x = H_sphere.x;
+        H_tot_z = -H_sphere.z;
+    } else {
+        // Non-dipped case: matches MATLAB sign convention
+        H_tot_x = -H_sphere.x;
+        H_tot_z = H_sphere.z;
+    }
+
+    #ifdef __EMSCRIPTEN__
+    EM_ASM_({
+        console.log('  H_tot after sign convention: (' + $0 + ', ' + $1 + ')');
+    }, H_tot_x, H_tot_z);
+    #else
+    std::cout << "  H_tot after sign convention: (" << H_tot_x << ", " << H_tot_z << ")" << std::endl;
+    #endif
 
     // Calculate 0th order term (overburden alone)
     Vec3 rrx_ob(-rtxrx.x, -rtxrx.y, rtx.z - rtxrx.z);
