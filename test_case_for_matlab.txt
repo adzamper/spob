@@ -1,0 +1,67 @@
+% Test case for comparing C++ implementation with MATLAB
+%
+% To use this test:
+% 1. Run this in MATLAB with your H_total_step_1storder function
+% 2. Compare the outputs with what the web application produces
+
+% Parameters that work (dip=90)
+fprintf('=== Test case 1: dip=90, strike=90 (should work) ===\n');
+mtx = [0, 0, 1];  % Vertical dipole
+dipoleM = 1.847300e6;
+rtx = [0, 0, 120];  % Transmitter at 120m height
+rtxrx = [125, 0, 56];  % Receiver offset
+rsp = [0, 0, -200];  % Sphere at -200m depth
+t = 0.0001546;  % First time window
+mu = 1.2566370614359172e-6;
+sigma_ob = 1/30;
+thick_ob = 4.0;
+sigma_sp = 0.5;
+a = 100.0;
+applydip = 1;
+dip = 90;
+strike = 90;
+T = 1/30;  % Period
+
+[H_tot_x1, H_tot_y1, H_tot_z1, H_x1, H_y1, H_z1, convo_x1, convo_z1] = ...
+    H_total_step_1storder(mtx, dipoleM, rtx, rtxrx, rsp, t, mu, sigma_ob, thick_ob, sigma_sp, a, applydip, dip, strike, T);
+
+fprintf('H_tot_x = %.10e\n', H_tot_x1);
+fprintf('H_tot_z = %.10e\n', H_tot_z1);
+fprintf('convo_x = %.10e\n', convo_x1);
+fprintf('convo_z = %.10e\n', convo_z1);
+fprintf('\n');
+
+% Parameters with intermediate dip
+fprintf('=== Test case 2: dip=85, strike=90 (reportedly doesn''t work) ===\n');
+dip = 85;
+[H_tot_x2, H_tot_y2, H_tot_z2, H_x2, H_y2, H_z2, convo_x2, convo_z2] = ...
+    H_total_step_1storder(mtx, dipoleM, rtx, rtxrx, rsp, t, mu, sigma_ob, thick_ob, sigma_sp, a, applydip, dip, strike, T);
+
+fprintf('H_tot_x = %.10e\n', H_tot_x2);
+fprintf('H_tot_z = %.10e\n', H_tot_z2);
+fprintf('convo_x = %.10e\n', convo_x2);
+fprintf('convo_z = %.10e\n', convo_z2);
+fprintf('\n');
+
+% Another intermediate dip
+fprintf('=== Test case 3: dip=45, strike=90 ===\n');
+dip = 45;
+[H_tot_x3, H_tot_y3, H_tot_z3, H_x3, H_y3, H_z3, convo_x3, convo_z3] = ...
+    H_total_step_1storder(mtx, dipoleM, rtx, rtxrx, rsp, t, mu, sigma_ob, thick_ob, sigma_sp, a, applydip, dip, strike, T);
+
+fprintf('H_tot_x = %.10e\n', H_tot_x3);
+fprintf('H_tot_z = %.10e\n', H_tot_z3);
+fprintf('convo_x = %.10e\n', convo_x3);
+fprintf('convo_z = %.10e\n', convo_z3);
+fprintf('\n');
+
+% Test with apply_dip = 0 for comparison
+fprintf('=== Test case 4: applydip=0 (no dipping) ===\n');
+applydip = 0;
+[H_tot_x4, H_tot_y4, H_tot_z4, H_x4, H_y4, H_z4, convo_x4, convo_z4] = ...
+    H_total_step_1storder(mtx, dipoleM, rtx, rtxrx, rsp, t, mu, sigma_ob, thick_ob, sigma_sp, a, applydip, dip, strike, T);
+
+fprintf('H_tot_x = %.10e\n', H_tot_x4);
+fprintf('H_tot_z = %.10e\n', H_tot_z4);
+fprintf('convo_x = %.10e\n', convo_x4);
+fprintf('convo_z = %.10e\n', convo_z4);
