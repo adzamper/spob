@@ -506,6 +506,14 @@ void H_total_step_1storder(const Vec3& mtx, double dipoleM, const Vec3& rtx,
     H_tot_x += H_x;
     H_tot_z += H_z;
 
+    // FIX: When applydip is false, the recent z-component sign corrections
+    // introduced a polarity inconsistency. When applydip is true, the dip
+    // projection corrects for this, but when false we need to manually correct.
+    if (!applydip) {
+        H_tot_x = -H_tot_x;
+        H_tot_z = -H_tot_z;
+    }
+
     // Y components are zero (not implemented)
     H_tot_y = 0.0;
     H_y = 0.0;
@@ -569,14 +577,42 @@ std::string calculate_em_response(const std::string& params_json) {
         if (!std::isnan(val = extract_num(params_json, "profile_length"))) params.profile_length = val;
 
         // Tx-Rx offset vector
+        // Support both flat keys (rtxrx_x) and nested object (rtxrx.x)
         if (!std::isnan(val = extract_num(params_json, "rtxrx_x"))) params.rtxrx.x = val;
         if (!std::isnan(val = extract_num(params_json, "rtxrx_y"))) params.rtxrx.y = val;
         if (!std::isnan(val = extract_num(params_json, "rtxrx_z"))) params.rtxrx.z = val;
+
+        // Check for nested object format: "rtxrx": {"x": ..., "y": ..., "z": ...}
+        auto extract_nested = [](const std::string& json, const std::string& parent_key, const std::string& child_key) -> double {
+            size_t pos = json.find("\"" + parent_key + "\"");
+            if (pos == std::string::npos) return std::numeric_limits<double>::quiet_NaN();
+            pos = json.find("{", pos);
+            if (pos == std::string::npos) return std::numeric_limits<double>::quiet_NaN();
+            size_t end_pos = json.find("}", pos);
+            if (end_pos == std::string::npos) return std::numeric_limits<double>::quiet_NaN();
+            std::string nested_obj = json.substr(pos, end_pos - pos + 1);
+
+            size_t key_pos = nested_obj.find("\"" + child_key + "\"");
+            if (key_pos == std::string::npos) return std::numeric_limits<double>::quiet_NaN();
+            key_pos = nested_obj.find(":", key_pos);
+            if (key_pos == std::string::npos) return std::numeric_limits<double>::quiet_NaN();
+            size_t val_end = nested_obj.find_first_of(",}", key_pos);
+            std::string val_str = nested_obj.substr(key_pos + 1, val_end - key_pos - 1);
+            try { return std::stod(val_str); } catch (...) { return std::numeric_limits<double>::quiet_NaN(); }
+        };
+
+        if (!std::isnan(val = extract_nested(params_json, "rtxrx", "x"))) params.rtxrx.x = val;
+        if (!std::isnan(val = extract_nested(params_json, "rtxrx", "y"))) params.rtxrx.y = val;
+        if (!std::isnan(val = extract_nested(params_json, "rtxrx", "z"))) params.rtxrx.z = val;
 
         // Dipole direction vector
         if (!std::isnan(val = extract_num(params_json, "mtx_x"))) params.mtx.x = val;
         if (!std::isnan(val = extract_num(params_json, "mtx_y"))) params.mtx.y = val;
         if (!std::isnan(val = extract_num(params_json, "mtx_z"))) params.mtx.z = val;
+        // Check for nested object format
+        if (!std::isnan(val = extract_nested(params_json, "mtx", "x"))) params.mtx.x = val;
+        if (!std::isnan(val = extract_nested(params_json, "mtx", "y"))) params.mtx.y = val;
+        if (!std::isnan(val = extract_nested(params_json, "mtx", "z"))) params.mtx.z = val;
         params.mtx = params.mtx.normalized();
 
         // Sphere parameters
@@ -585,6 +621,10 @@ std::string calculate_em_response(const std::string& params_json) {
         if (!std::isnan(val = extract_num(params_json, "rsp_x"))) params.rsp.x = val;
         if (!std::isnan(val = extract_num(params_json, "rsp_y"))) params.rsp.y = val;
         if (!std::isnan(val = extract_num(params_json, "rsp_z"))) params.rsp.z = val;
+        // Check for nested object format
+        if (!std::isnan(val = extract_nested(params_json, "rsp", "x"))) params.rsp.x = val;
+        if (!std::isnan(val = extract_nested(params_json, "rsp", "y"))) params.rsp.y = val;
+        if (!std::isnan(val = extract_nested(params_json, "rsp", "z"))) params.rsp.z = val;
 
         // Overburden parameters
         if (!std::isnan(val = extract_num(params_json, "sigma_ob"))) params.sigma_ob = val;
