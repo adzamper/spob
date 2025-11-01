@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <functional>
 #include <limits>
+#include <iostream>
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
@@ -559,17 +560,12 @@ void H_total_step_1storder(const Vec3& mtx, double dipoleM, const Vec3& rtx,
     std::cout << "  H_sphere from static_dipole_field: (" << H_sphere.x << ", " << H_sphere.y << ", " << H_sphere.z << ")" << std::endl;
     #endif
 
-    // Sign convention depends on whether dip is applied
-    if (applydip) {
-        // When dipping is applied, the rotation changes the coordinate system
-        // We need to flip both x and z signs relative to the non-dipped case
-        H_tot_x = H_sphere.x;
-        H_tot_z = -H_sphere.z;
-    } else {
-        // Non-dipped case: matches MATLAB sign convention
-        H_tot_x = -H_sphere.x;
-        H_tot_z = H_sphere.z;
-    }
+    // MATLAB sign convention (lines 34-35 in H_total_step_1storder.m):
+    // H_tot_x = -dot([1,0,0], static(...))
+    // H_tot_z =  dot([0,0,1], static(...))
+    // This convention is the SAME whether applydip is 0 or 1
+    H_tot_x = -H_sphere.x;
+    H_tot_z = H_sphere.z;
 
     #ifdef __EMSCRIPTEN__
     EM_ASM_({
