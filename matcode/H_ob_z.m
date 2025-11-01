@@ -13,7 +13,11 @@ rrx_y=rrx(2);
 rrx_z=rrx(3);
 
 if rrx_z > 0
-    H_ob_z=(-1./(4.*pi)).*(- m_z./((rrx_x - rtx_x).^2 + (rrx_y - rtx_y).^2 + (rrx_z + rtx_z + (2.*O)./(mu.*sigma_ob.*thick_ob)).^2).^(3./2) - (3.*(2.*rrx_z + 2.*rtx_z + (4.*O)./(mu.*sigma_ob.*thick_ob)).*(m_x.*(rrx_x - rtx_x) - m_z.*(rrx_z + rtx_z + (2.*O)./(mu.*sigma_ob.*thick_ob)) + m_y.*(rrx_y - rtx_y)))./(2.*((rrx_x - rtx_x).^2 + (rrx_y - rtx_y).^2 + (rrx_z + rtx_z + (2.*O)./(mu.*sigma_ob.*thick_ob)).^2).^(5./2)));
+    % FIX: Changed sign from -m_z to +m_z to match x-component pattern
+    % FIX: Changed sign in bracket from -m_z*(rrx_z+rtx_z+...) to +m_z*(rrx_z+rtx_z+...)
+    H_ob_z=(-1./(4.*pi)).*(m_z./((rrx_x - rtx_x).^2 + (rrx_y - rtx_y).^2 + (rrx_z + rtx_z + (2.*O)./(mu.*sigma_ob.*thick_ob)).^2).^(3./2) - (3.*(2.*rrx_z + 2.*rtx_z + (4.*O)./(mu.*sigma_ob.*thick_ob)).*(m_x.*(rrx_x - rtx_x) + m_z.*(rrx_z + rtx_z + (2.*O)./(mu.*sigma_ob.*thick_ob)) + m_y.*(rrx_y - rtx_y)))./(2.*((rrx_x - rtx_x).^2 + (rrx_y - rtx_y).^2 + (rrx_z + rtx_z + (2.*O)./(mu.*sigma_ob.*thick_ob)).^2).^(5./2)));
 else
-    H_ob_z=(-1./(4.*pi)).*(m_z./((rrx_x - rtx_x).^2 + (rrx_y - rtx_y).^2 + (rtx_z - rrx_z + (2.*O)./(mu.*sigma_ob.*thick_ob)).^2).^(3./2) + (3.*(2.*rtx_z - 2.*rrx_z + (4.*O)./(mu.*sigma_ob.*thick_ob)).*(m_x.*(rrx_x - rtx_x) + m_y.*(rrx_y - rtx_y) - m_z.*(rtx_z - rrx_z + (2.*O)./(mu.*sigma_ob.*thick_ob))))./(2.*((rrx_x - rtx_x).^2 + (rrx_y - rtx_y).^2 + (rtx_z - rrx_z + (2.*O)./(mu.*sigma_ob.*thick_ob)).^2).^(5./2)));
+    % FIX: Keep consistent sign pattern with receiver above case
+    % FIX: Changed sign in bracket from -m_z*(rtx_z-rrx_z+...) to +m_z*(rtx_z-rrx_z+...)
+    H_ob_z=(-1./(4.*pi)).*(m_z./((rrx_x - rtx_x).^2 + (rrx_y - rtx_y).^2 + (rtx_z - rrx_z + (2.*O)./(mu.*sigma_ob.*thick_ob)).^2).^(3./2) + (3.*(2.*rtx_z - 2.*rrx_z + (4.*O)./(mu.*sigma_ob.*thick_ob)).*(m_x.*(rrx_x - rtx_x) + m_y.*(rrx_y - rtx_y) + m_z.*(rtx_z - rrx_z + (2.*O)./(mu.*sigma_ob.*thick_ob))))./(2.*((rrx_x - rtx_x).^2 + (rrx_y - rtx_y).^2 + (rtx_z - rrx_z + (2.*O)./(mu.*sigma_ob.*thick_ob)).^2).^(5./2)));
 end
