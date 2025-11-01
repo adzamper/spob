@@ -195,7 +195,7 @@ double H_ob_z_component(const Vec3& mtx, double dipoleM, const Vec3& rtx,
         double r_3_2 = std::pow(r2, 1.5);
 
         double term1 = -m_z / r_3_2;
-        double term2 = 3.0 * (2.0 * dz + (4.0 * O) / (mu * sigma_ob * thick_ob)) *
+        double term2 = 3.0 * (2.0 * (rrx.z + rtx.z) + (4.0 * O) / (mu * sigma_ob * thick_ob)) *
                        (m_x * dx - m_z * dz + m_y * dy) / (2.0 * r_5_2);
 
         H_ob_z = (-1.0 / (4.0 * PI)) * (term1 - term2);
@@ -207,7 +207,7 @@ double H_ob_z_component(const Vec3& mtx, double dipoleM, const Vec3& rtx,
         double r_3_2 = std::pow(r2, 1.5);
 
         double term1 = m_z / r_3_2;
-        double term2 = 3.0 * (2.0 * dz + (4.0 * O) / (mu * sigma_ob * thick_ob)) *
+        double term2 = 3.0 * (2.0 * (rtx.z - rrx.z) + (4.0 * O) / (mu * sigma_ob * thick_ob)) *
                        (m_x * dx + m_y * dy - m_z * dz) / (2.0 * r_5_2);
 
         H_ob_z = (-1.0 / (4.0 * PI)) * (term1 + term2);
@@ -285,8 +285,8 @@ double dH_obdt_z(const Vec3& mtx, double dipoleM, const Vec3& rtx,
 
         double term1 = (6.0 * m_z * dz) / (tau * r_5_2);
         double term2 = (6.0 * (m_x * dx - m_z * dz + m_y * dy)) / (tau * r_5_2);
-        double term3 = (m_z * (6.0 * dz + (12.0 * O) / tau)) / (tau * r_5_2);
-        double term4 = (5.0 * (6.0 * dz + (12.0 * O) / tau) * dz *
+        double term3 = (m_z * (6.0 * (rrx.z + rtx.z) + (12.0 * O) / tau)) / (tau * r_5_2);
+        double term4 = (5.0 * (6.0 * (rrx.z + rtx.z) + (12.0 * O) / tau) * dz *
                         (m_x * dx - m_z * dz + m_y * dy)) / (tau * r_7_2);
 
         dH_dt = (-1.0 / (4.0 * PI)) * (term1 - term2 + term3 + term4);
@@ -299,9 +299,9 @@ double dH_obdt_z(const Vec3& mtx, double dipoleM, const Vec3& rtx,
         double tau = mu * sigma_ob * thick_ob;
 
         double term1 = (6.0 * (m_x * dx + m_y * dy - m_z * dz)) / (tau * r_5_2);
-        double term2 = (m_z * (6.0 * dz + (12.0 * O) / tau)) / (tau * r_5_2);
+        double term2 = (m_z * (6.0 * (rtx.z - rrx.z) + (12.0 * O) / tau)) / (tau * r_5_2);
         double term3 = (6.0 * m_z * dz) / (tau * r_5_2);
-        double term4 = (5.0 * (6.0 * dz + (12.0 * O) / tau) * dz *
+        double term4 = (5.0 * (6.0 * (rtx.z - rrx.z) + (12.0 * O) / tau) * dz *
                         (m_x * dx + m_y * dy - m_z * dz)) / (tau * r_7_2);
 
         dH_dt = (-1.0 / (4.0 * PI)) * (term1 - term2 - term3 - term4);
