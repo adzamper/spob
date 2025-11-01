@@ -469,22 +469,51 @@ void H_total_step_1storder(const Vec3& mtx, double dipoleM, const Vec3& rtx,
     // Store sphere moment
     Vec3 msp(convo_x, convo_y, convo_z);
 
+    #ifndef __EMSCRIPTEN__
+    std::cout << "DEBUG: applydip = " << applydip << ", dip = " << dip << ", strike = " << strike << std::endl;
+    std::cout << "DEBUG: msp before dipping: (" << msp.x << ", " << msp.y << ", " << msp.z << ")" << std::endl;
+    #endif
+
     // Apply dipping sphere model if requested
     if (applydip) {
         // Calculate normal vector to dipping plane
         double strike_rad = (strike - 90.0) * PI / 180.0;
         double dip_rad = (90.0 - dip) * PI / 180.0;
 
+        #ifndef __EMSCRIPTEN__
+        std::cout << "DEBUG: Applying dip" << std::endl;
+        std::cout << "  dip = " << dip << ", strike = " << strike << std::endl;
+        std::cout << "  dip_rad = " << dip_rad << ", strike_rad = " << strike_rad << std::endl;
+        std::cout << "  msp before projection: (" << msp.x << ", " << msp.y << ", " << msp.z << ")" << std::endl;
+        #endif
+
         Vec3 norm(std::cos(dip_rad) * std::cos(strike_rad),
                   std::sin(strike_rad) * std::cos(dip_rad),
                   std::sin(dip_rad));
 
+        #ifndef __EMSCRIPTEN__
+        std::cout << "  norm before normalization: (" << norm.x << ", " << norm.y << ", " << norm.z << ")" << std::endl;
+        #endif
+
         // Normalize
         norm = norm.normalized();
 
+        #ifndef __EMSCRIPTEN__
+        std::cout << "  norm after normalization: (" << norm.x << ", " << norm.y << ", " << norm.z << ")" << std::endl;
+        #endif
+
         // Project moment onto normal direction
         double mspdotnorm = msp.dot(norm);
+
+        #ifndef __EMSCRIPTEN__
+        std::cout << "  msp.dot(norm) = " << mspdotnorm << std::endl;
+        #endif
+
         msp = norm * mspdotnorm;
+
+        #ifndef __EMSCRIPTEN__
+        std::cout << "  msp after projection: (" << msp.x << ", " << msp.y << ", " << msp.z << ")" << std::endl;
+        #endif
     }
 
     // Calculate field using induced moment
