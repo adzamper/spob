@@ -494,7 +494,9 @@ void H_total_step_1storder(const Vec3& mtx, double dipoleM, const Vec3& rtx,
 
     Vec3 H_sphere = static_dipole_field(msp, r_rel);
 
-    H_tot_x = -H_sphere.x;  // Note: negative sign for x component
+    // Sign convention matches MATLAB: H_tot_x is negative, H_tot_z is positive
+    // This applies consistently regardless of applydip setting
+    H_tot_x = -H_sphere.x;
     H_tot_z = H_sphere.z;
 
     // Calculate 0th order term (overburden alone)
@@ -505,14 +507,6 @@ void H_total_step_1storder(const Vec3& mtx, double dipoleM, const Vec3& rtx,
     // Add overburden response
     H_tot_x += H_x;
     H_tot_z += H_z;
-
-    // FIX: When applydip is false, the recent z-component sign corrections
-    // introduced a polarity inconsistency. When applydip is true, the dip
-    // projection corrects for this, but when false we need to manually correct.
-    if (!applydip) {
-        H_tot_x = -H_tot_x;
-        H_tot_z = -H_tot_z;
-    }
 
     // Y components are zero (not implemented)
     H_tot_y = 0.0;
