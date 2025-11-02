@@ -470,15 +470,7 @@ void H_total_step_1storder(const Vec3& mtx, double dipoleM, const Vec3& rtx,
     // Store sphere moment
     Vec3 msp(convo_x, convo_y, convo_z);
 
-    #ifdef __EMSCRIPTEN__
-    EM_ASM_({
-        console.log('DEBUG: applydip = ' + $0 + ', dip = ' + $1 + ', strike = ' + $2);
-        console.log('DEBUG: msp before dipping: (' + $3 + ', ' + $4 + ', ' + $5 + ')');
-    }, applydip, dip, strike, msp.x, msp.y, msp.z);
-    #else
-    std::cout << "DEBUG: applydip = " << applydip << ", dip = " << dip << ", strike = " << strike << std::endl;
-    std::cout << "DEBUG: msp before dipping: (" << msp.x << ", " << msp.y << ", " << msp.z << ")" << std::endl;
-    #endif
+    // Debug output removed to reduce verbosity
 
     // Apply dipping sphere model if requested
     if (applydip) {
@@ -486,63 +478,17 @@ void H_total_step_1storder(const Vec3& mtx, double dipoleM, const Vec3& rtx,
         double strike_rad = (strike - 90.0) * PI / 180.0;
         double dip_rad = (90.0 - dip) * PI / 180.0;
 
-        #ifdef __EMSCRIPTEN__
-        EM_ASM_({
-            console.log('DEBUG: Applying dip');
-            console.log('  dip = ' + $0 + ', strike = ' + $1);
-            console.log('  dip_rad = ' + $2 + ', strike_rad = ' + $3);
-            console.log('  msp before projection: (' + $4 + ', ' + $5 + ', ' + $6 + ')');
-        }, dip, strike, dip_rad, strike_rad, msp.x, msp.y, msp.z);
-        #else
-        std::cout << "DEBUG: Applying dip" << std::endl;
-        std::cout << "  dip = " << dip << ", strike = " << strike << std::endl;
-        std::cout << "  dip_rad = " << dip_rad << ", strike_rad = " << strike_rad << std::endl;
-        std::cout << "  msp before projection: (" << msp.x << ", " << msp.y << ", " << msp.z << ")" << std::endl;
-        #endif
-
+        // Calculate dipping plane normal vector
         Vec3 norm(std::cos(dip_rad) * std::cos(strike_rad),
                   std::sin(strike_rad) * std::cos(dip_rad),
                   std::sin(dip_rad));
 
-        #ifdef __EMSCRIPTEN__
-        EM_ASM_({
-            console.log('  norm before normalization: (' + $0 + ', ' + $1 + ', ' + $2 + ')');
-        }, norm.x, norm.y, norm.z);
-        #else
-        std::cout << "  norm before normalization: (" << norm.x << ", " << norm.y << ", " << norm.z << ")" << std::endl;
-        #endif
-
         // Normalize
         norm = norm.normalized();
 
-        #ifdef __EMSCRIPTEN__
-        EM_ASM_({
-            console.log('  norm after normalization: (' + $0 + ', ' + $1 + ', ' + $2 + ')');
-        }, norm.x, norm.y, norm.z);
-        #else
-        std::cout << "  norm after normalization: (" << norm.x << ", " << norm.y << ", " << norm.z << ")" << std::endl;
-        #endif
-
         // Project moment onto normal direction
         double mspdotnorm = msp.dot(norm);
-
-        #ifdef __EMSCRIPTEN__
-        EM_ASM_({
-            console.log('  msp.dot(norm) = ' + $0);
-        }, mspdotnorm);
-        #else
-        std::cout << "  msp.dot(norm) = " << mspdotnorm << std::endl;
-        #endif
-
         msp = norm * mspdotnorm;
-
-        #ifdef __EMSCRIPTEN__
-        EM_ASM_({
-            console.log('  msp after projection: (' + $0 + ', ' + $1 + ', ' + $2 + ')');
-        }, msp.x, msp.y, msp.z);
-        #else
-        std::cout << "  msp after projection: (" << msp.x << ", " << msp.y << ", " << msp.z << ")" << std::endl;
-        #endif
     }
 
     // Calculate field using induced moment
@@ -552,28 +498,12 @@ void H_total_step_1storder(const Vec3& mtx, double dipoleM, const Vec3& rtx,
 
     Vec3 H_sphere = static_dipole_field(msp, r_rel);
 
-    #ifdef __EMSCRIPTEN__
-    EM_ASM_({
-        console.log('  H_sphere from static_dipole_field: (' + $0 + ', ' + $1 + ', ' + $2 + ')');
-    }, H_sphere.x, H_sphere.y, H_sphere.z);
-    #else
-    std::cout << "  H_sphere from static_dipole_field: (" << H_sphere.x << ", " << H_sphere.y << ", " << H_sphere.z << ")" << std::endl;
-    #endif
-
     // MATLAB sign convention (lines 34-35 in H_total_step_1storder.m):
     // H_tot_x = -dot([1,0,0], static(...))
     // H_tot_z =  dot([0,0,1], static(...))
     // This convention is the SAME whether applydip is 0 or 1
     H_tot_x = -H_sphere.x;
     H_tot_z = H_sphere.z;
-
-    #ifdef __EMSCRIPTEN__
-    EM_ASM_({
-        console.log('  H_tot after sign convention: (' + $0 + ', ' + $1 + ')');
-    }, H_tot_x, H_tot_z);
-    #else
-    std::cout << "  H_tot after sign convention: (" << H_tot_x << ", " << H_tot_z << ")" << std::endl;
-    #endif
 
     // Calculate 0th order term (overburden alone)
     Vec3 rrx_ob(-rtxrx.x, -rtxrx.y, rtx.z - rtxrx.z);
@@ -632,8 +562,27 @@ std::string calculate_em_response(const std::string& params_json) {
             size_t pos = json.find("\"" + key + "\"");
             if (pos == std::string::npos) return false;
             pos = json.find(":", pos);
-            return json.find("true", pos) < json.find(",", pos) ||
-                   json.find("true", pos) < json.find("}", pos);
+            if (pos == std::string::npos) return false;
+
+            // Find the value after the colon (skip whitespace)
+            size_t val_start = pos + 1;
+            while (val_start < json.length() && (json[val_start] == ' ' || json[val_start] == '\t')) {
+                val_start++;
+            }
+
+            // Check for "true" or "1"
+            if (json.compare(val_start, 4, "true") == 0) return true;
+            if (val_start < json.length() && json[val_start] == '1') {
+                // Check that it's just '1' and not part of a larger number
+                if (val_start + 1 >= json.length() ||
+                    json[val_start + 1] == ',' ||
+                    json[val_start + 1] == '}' ||
+                    json[val_start + 1] == ' ') {
+                    return true;
+                }
+            }
+
+            return false;
         };
 
         double val;
@@ -820,7 +769,7 @@ EMSCRIPTEN_BINDINGS(sphere_overburden) {
 // ============================================================================
 // Main function for testing/standalone compilation
 // ============================================================================
-#ifndef __EMSCRIPTEN__
+#if !defined(__EMSCRIPTEN__) && !defined(LIBRARY_BUILD)
 int main() {
     std::string result = calculate_em_response("{}");
     // In standalone mode, you could print or process the result
