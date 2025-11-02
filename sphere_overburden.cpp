@@ -475,8 +475,10 @@ void H_total_step_1storder(const Vec3& mtx, double dipoleM, const Vec3& rtx,
     // Apply dipping sphere model if requested
     if (applydip) {
         // Calculate normal vector to dipping plane
+        // For dip > 90° (sub-vertical tilted back), use |90-dip| to ensure
+        // smooth, continuous behavior and prevent sign flips in projection
         double strike_rad = (strike - 90.0) * PI / 180.0;
-        double dip_rad = (90.0 - dip) * PI / 180.0;
+        double dip_rad = std::abs(90.0 - dip) * PI / 180.0;
 
         // Calculate dipping plane normal vector
         Vec3 norm(std::cos(dip_rad) * std::cos(strike_rad),

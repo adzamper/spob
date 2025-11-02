@@ -97,7 +97,7 @@ int main() {
         "a": 100.0, "sigma_sp": 0.5,
         "sigma_ob": 0.0333333333333333, "thick_ob": 4.0,
         "period": 0.0333333333333333,
-        "apply_dip": true, "strike": 90.0, "dip": 92.0,
+        "apply_dip": true, "strike": 90.0, "dip": 90.0,
         "xsign_negative": false,
         "mtx_x": 0.0, "mtx_y": 0.0, "mtx_z": 1.0
     })";
