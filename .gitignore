@@ -1,6 +1,14 @@
 # Compiled test executables
 test_sphere
 test_angles
+check_coordinate_transform
+diagnose_full_calculation
+full_test
+test_dip_comparison
+test_dip_variation
+test_exact_matlab_params
+test_exact_params
+test_matlab_dip
 
 # Build artifacts
 *.o
