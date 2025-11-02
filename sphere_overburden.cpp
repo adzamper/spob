@@ -455,6 +455,19 @@ void H_total_step_1storder(const Vec3& mtx, double dipoleM, const Vec3& rtx,
                              double& H_tot_x, double& H_tot_y, double& H_tot_z,
                              double& H_x, double& H_y, double& H_z,
                              double& convo_x, double& convo_z) {
+
+    // DEBUG: Print for dip=45 case
+    if (applydip && std::abs(dip - 45.0) < 0.1) {
+        std::cout << "\n=== C++ DEBUG: dip=" << dip << " case ===" << std::endl;
+        std::cout << "INPUT PARAMETERS:" << std::endl;
+        std::cout << "  rtx = [" << rtx.x << ", " << rtx.y << ", " << rtx.z << "]" << std::endl;
+        std::cout << "  rtxrx = [" << rtxrx.x << ", " << rtxrx.y << ", " << rtxrx.z << "]" << std::endl;
+        std::cout << "  rsp = [" << rsp.x << ", " << rsp.y << ", " << rsp.z << "]" << std::endl;
+        std::cout << "  dip = " << dip << ", strike = " << strike << std::endl;
+        std::cout << "  a = " << a << ", sigma_sp = " << sigma_sp << ", sigma_ob = " << sigma_ob << ", thick_ob = " << thick_ob << std::endl;
+        std::cout << "  t = " << t << ", T = " << T << std::endl;
+    }
+
     // Calculate first-order induced moment components
     Vec3 rtx_adj(0, 0, rtx.z);
     Vec3 rsp_adj(-rtx.x, -rtx.y, rsp.z);
@@ -470,7 +483,13 @@ void H_total_step_1storder(const Vec3& mtx, double dipoleM, const Vec3& rtx,
     // Store sphere moment
     Vec3 msp(convo_x, convo_y, convo_z);
 
-    // Debug output removed to reduce verbosity
+    // DEBUG: Print induced moment
+    if (applydip && std::abs(dip - 45.0) < 0.1) {
+        std::cout << "INDUCED MOMENT (before dip):" << std::endl;
+        std::cout << "  convo_x = " << convo_x << std::endl;
+        std::cout << "  convo_z = " << convo_z << std::endl;
+        std::cout << "  msp = [" << msp.x << ", " << msp.y << ", " << msp.z << "]" << std::endl;
+    }
 
     // Apply dipping sphere model if requested
     if (applydip) {
@@ -485,12 +504,40 @@ void H_total_step_1storder(const Vec3& mtx, double dipoleM, const Vec3& rtx,
                   std::sin(strike_rad) * std::cos(dip_rad),
                   std::sin(dip_rad));
 
+        // DEBUG: Print normal vector calculation
+        if (std::abs(dip - 45.0) < 0.1) {
+            Vec3 norm_before_normalize = norm;
+            double norm_magnitude = norm.norm();
+            std::cout << "NORMAL VECTOR CALCULATION:" << std::endl;
+            std::cout << "  90-dip = " << (90.0 - dip) << " degrees" << std::endl;
+            std::cout << "  |90-dip| = " << std::abs(90.0 - dip) << " degrees" << std::endl;
+            std::cout << "  strike-90 = " << (strike - 90.0) << " degrees" << std::endl;
+            std::cout << "  dip_rad = " << dip_rad << " radians" << std::endl;
+            std::cout << "  strike_rad = " << strike_rad << " radians" << std::endl;
+            std::cout << "  norm (before normalize) = [" << norm_before_normalize.x << ", " << norm_before_normalize.y << ", " << norm_before_normalize.z << "]" << std::endl;
+            std::cout << "  norm magnitude = " << norm_magnitude << std::endl;
+        }
+
         // Normalize
         norm = norm.normalized();
 
+        // DEBUG: Print normalized normal
+        if (std::abs(dip - 45.0) < 0.1) {
+            std::cout << "  norm (after normalize) = [" << norm.x << ", " << norm.y << ", " << norm.z << "]" << std::endl;
+        }
+
         // Project moment onto normal direction
+        Vec3 msp_before_proj = msp;
         double mspdotnorm = msp.dot(norm);
         msp = norm * mspdotnorm;
+
+        // DEBUG: Print projection
+        if (std::abs(dip - 45.0) < 0.1) {
+            std::cout << "MOMENT PROJECTION:" << std::endl;
+            std::cout << "  msp (before) = [" << msp_before_proj.x << ", " << msp_before_proj.y << ", " << msp_before_proj.z << "]" << std::endl;
+            std::cout << "  mspdotnorm = " << mspdotnorm << std::endl;
+            std::cout << "  msp (after) = [" << msp.x << ", " << msp.y << ", " << msp.z << "]" << std::endl;
+        }
     }
 
     // Calculate field using induced moment
@@ -498,7 +545,21 @@ void H_total_step_1storder(const Vec3& mtx, double dipoleM, const Vec3& rtx,
     Vec3 r_sphere = Vec3(-rtx.x, -rtx.y, rsp.z);
     Vec3 r_rel = r_receiver - r_sphere;
 
+    // DEBUG: Print position vectors
+    if (applydip && std::abs(dip - 45.0) < 0.1) {
+        std::cout << "POSITION VECTORS:" << std::endl;
+        std::cout << "  r_receiver = [" << r_receiver.x << ", " << r_receiver.y << ", " << r_receiver.z << "]" << std::endl;
+        std::cout << "  r_sphere = [" << r_sphere.x << ", " << r_sphere.y << ", " << r_sphere.z << "]" << std::endl;
+        std::cout << "  r_rel = [" << r_rel.x << ", " << r_rel.y << ", " << r_rel.z << "]" << std::endl;
+    }
+
     Vec3 H_sphere = static_dipole_field(msp, r_rel);
+
+    // DEBUG: Print static field
+    if (applydip && std::abs(dip - 45.0) < 0.1) {
+        std::cout << "STATIC DIPOLE FIELD:" << std::endl;
+        std::cout << "  H_sphere = [" << H_sphere.x << ", " << H_sphere.y << ", " << H_sphere.z << "]" << std::endl;
+    }
 
     // MATLAB sign convention (lines 34-35 in H_total_step_1storder.m):
     // H_tot_x = -dot([1,0,0], static(...))
@@ -506,6 +567,13 @@ void H_total_step_1storder(const Vec3& mtx, double dipoleM, const Vec3& rtx,
     // This convention is the SAME whether applydip is 0 or 1
     H_tot_x = -H_sphere.x;
     H_tot_z = H_sphere.z;
+
+    // DEBUG: Print sphere contribution
+    if (applydip && std::abs(dip - 45.0) < 0.1) {
+        std::cout << "SPHERE CONTRIBUTION:" << std::endl;
+        std::cout << "  H_tot_x (from sphere) = " << H_tot_x << std::endl;
+        std::cout << "  H_tot_z (from sphere) = " << H_tot_z << std::endl;
+    }
 
     // Calculate 0th order term (overburden alone)
     Vec3 rrx_ob(-rtxrx.x, -rtxrx.y, rtx.z - rtxrx.z);
@@ -515,6 +583,17 @@ void H_total_step_1storder(const Vec3& mtx, double dipoleM, const Vec3& rtx,
     // Add overburden response
     H_tot_x += H_x;
     H_tot_z += H_z;
+
+    // DEBUG: Print final values
+    if (applydip && std::abs(dip - 45.0) < 0.1) {
+        std::cout << "OVERBURDEN CONTRIBUTION:" << std::endl;
+        std::cout << "  H_x = " << H_x << std::endl;
+        std::cout << "  H_z = " << H_z << std::endl;
+        std::cout << "FINAL TOTAL FIELD:" << std::endl;
+        std::cout << "  H_tot_x = " << H_tot_x << std::endl;
+        std::cout << "  H_tot_z = " << H_tot_z << std::endl;
+        std::cout << "=== END C++ DEBUG ===" << std::endl << std::endl;
+    }
 
     // Y components are zero (not implemented)
     H_tot_y = 0.0;
