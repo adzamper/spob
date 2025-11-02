@@ -30,9 +30,16 @@ async function initWasm() {
         // Import the WASM module
         const wasm = await import('./pkg/sphere_overburden_wasm.js');
 
-        // Initialize the WASM module (critical step!)
-        // IMPORTANT: Store the RESULT of wasm.default(), not the import itself
-        wasmModule = await wasm.default();
+        // Initialize the WASM module with print handlers for stdout/stderr
+        // This ensures C++ std::cout/std::cerr output appears in browser console
+        wasmModule = await wasm.default({
+            print: function(text) {
+                console.log('[WASM stdout]', text);
+            },
+            printErr: function(text) {
+                console.error('[WASM stderr]', text);
+            }
+        });
 
         console.log('WASM module loaded and initialized successfully');
         document.getElementById('calculateBtn').disabled = false;

@@ -8,6 +8,8 @@ echo "Building Sphere Overburden WASM module..."
 mkdir -p frontend/pkg
 
 # Compile with Emscripten
+# NOTE: Removed -s ASSERTIONS=0 to enable console output
+# Added -s ASSERTIONS=1 for better debugging
 emcc sphere_overburden.cpp \
   -o frontend/pkg/sphere_overburden_wasm.js \
   -s WASM=1 \
@@ -18,7 +20,7 @@ emcc sphere_overburden.cpp \
   -s MAXIMUM_MEMORY=4GB \
   -O3 \
   -s NO_EXIT_RUNTIME=1 \
-  -s ASSERTIONS=0 \
+  -s ASSERTIONS=1 \
   --bind
 
 if [ $? -eq 0 ]; then
