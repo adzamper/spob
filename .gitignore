@@ -9,6 +9,12 @@ test_dip_variation
 test_exact_matlab_params
 test_exact_params
 test_matlab_dip
+test_dip_90_vs_92
+test_all_windows
+test_exact_matlab
+check_coordinate_systems
+test_rtxrx12
+trace_dip_bug
 
 # Build artifacts
 *.o
